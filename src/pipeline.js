@@ -1,10 +1,14 @@
 /**
- * 三段式链路：
- *   1) 解析梦境 + 编排分镜  —— 合并为一次调用，省一次往返
+ * 两段式链路：
+ *   1) 解析梦境 + 编排画面  —— 合并为一次调用，省一次往返
  *   2) 生成视觉提示词        —— 依赖第 1 步的结构化结果
  *
- * 合并第 1、2 步是一个刻意的取舍：解析和分镜共享同一份上下文，
+ * 合并第 1、2 步是一个刻意的取舍：解析和编排共享同一份上下文，
  * 拆成两次调用只会多付一次延迟和一次输入 token，换不到质量提升。
+ *
+ * 画面字段用 sensation（身体感）而不是 camera（运镜）：
+ * 刻意避开电影语法，因为梦的记忆单位是「画面 + 身体感」，不是「镜头」。
+ * 视角与构图交给第二段按画面内容决定。
  */
 import { chat, extractJson } from './llm.js';
 import {
@@ -22,7 +26,7 @@ const asArray = (value) => {
 
 function normalizeAnalysis(raw) {
   const shots = Array.isArray(raw?.shots) ? raw.shots : [];
-  if (shots.length === 0) throw new Error('模型没有给出分镜，换个说法再试一次。');
+  if (shots.length === 0) throw new Error('模型没有给出画面，换个说法再试一次。');
 
   return {
     title: String(raw?.title || '未命名的梦').trim(),
@@ -31,10 +35,10 @@ function normalizeAnalysis(raw) {
     motifs: asArray(raw?.motifs),
     shots: shots.slice(0, 6).map((shot, index) => ({
       no: Number(shot?.no) || index + 1,
-      caption: String(shot?.caption || `镜头 ${index + 1}`).trim(),
+      caption: String(shot?.caption || `画面 ${index + 1}`).trim(),
       scene: String(shot?.scene || '').trim(),
       emotion: String(shot?.emotion || '').trim(),
-      camera: String(shot?.camera || '').trim(),
+      sensation: String(shot?.sensation || '').trim(),
     })),
   };
 }
@@ -119,7 +123,7 @@ export function toExport(result, dream) {
       caption: s.caption,
       scene: s.scene,
       emotion: s.emotion,
-      camera: s.camera,
+      sensation: s.sensation,
       prompt: s.fullPrompt,
     })),
   };

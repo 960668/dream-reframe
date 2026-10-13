@@ -337,7 +337,7 @@ textarea:focus {
   word-break: break-word;
 }
 
-/* 分镜 */
+/* 画面与提示词 */
 .shots { display: flex; flex-direction: column; gap: 14px; }
 
 .shot {
@@ -374,12 +374,23 @@ textarea:focus {
 
 .shot-scene { margin: 0 0 10px; color: var(--ink-2); font-size: 14px; }
 
-.shot-camera {
+.shot-sensation {
   margin: 0 0 14px;
   font-size: 12.5px;
   color: var(--ink-3);
   border-left: 2px solid var(--line-strong);
   padding-left: 10px;
+  display: flex;
+  gap: 9px;
+}
+
+.shot-sensation-label {
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  opacity: 0.75;
+  padding-top: 1px;
 }
 
 .shot-prompt-head {

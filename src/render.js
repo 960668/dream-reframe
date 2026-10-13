@@ -62,11 +62,19 @@ function shotCard(shot, index) {
     card.appendChild(scene);
   }
 
-  if (shot.camera) {
-    const cam = document.createElement('p');
-    cam.className = 'shot-camera';
-    cam.textContent = shot.camera;
-    card.appendChild(cam);
+  if (shot.sensation) {
+    const sens = document.createElement('p');
+    sens.className = 'shot-sensation';
+
+    const label = document.createElement('span');
+    label.className = 'shot-sensation-label';
+    label.textContent = '身体感';
+
+    const text = document.createElement('span');
+    text.textContent = shot.sensation;
+
+    sens.append(label, text);
+    card.appendChild(sens);
   }
 
   if (shot.fullPrompt) {
@@ -121,7 +129,7 @@ export function renderResult(result, { demo = false } = {}) {
 
   const shots = result.shots ?? [];
   $('shots').replaceChildren(...shots.map(shotCard));
-  $('shotCount').textContent = `${shots.length} 个镜头`;
+  $('shotCount').textContent = `${shots.length} 个画面`;
 
   const box = $('result');
   box.hidden = false;

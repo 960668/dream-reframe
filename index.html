@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>梦境重构 · Dream Reframe</title>
-<meta name="description" content="把一段醒来后即将遗忘的梦境，重构成可读的故事分镜与可执行的视觉提示词。">
+<meta name="description" content="把一段醒来后即将遗忘的梦境，重构成可以被看见的画面与可执行的视觉提示词。">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
@@ -86,7 +86,7 @@
 
     <ol class="steps" id="steps">
       <li data-step="analyze"><span class="dot"></span>解析梦境</li>
-      <li data-step="storyboard"><span class="dot"></span>编排分镜</li>
+      <li data-step="storyboard"><span class="dot"></span>编排画面</li>
       <li data-step="visual"><span class="dot"></span>生成视觉提示词</li>
     </ol>
   </section>
@@ -109,13 +109,13 @@
         <h3>风格锚点</h3>
         <button class="btn-copy" type="button" data-copy="styleAnchor">复制</button>
       </div>
-      <p class="field-hint">每个镜头都拼接了这一串，用来保证跨镜头的视觉一致性。</p>
+      <p class="field-hint">每个画面都拼接了这一串，用来保证跨画面的视觉一致性。</p>
       <pre class="code" id="styleAnchor"></pre>
     </article>
 
     <article class="panel">
       <div class="panel-head">
-        <h3>分镜重构</h3>
+        <h3>画面重构</h3>
         <span class="count" id="shotCount"></span>
       </div>
       <div id="shots" class="shots"></div>
