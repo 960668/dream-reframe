@@ -69,4 +69,4 @@ export const PROVIDERS = [
 export const STORAGE_KEY = 'dream-reframe:settings:v1';
 
 /** 部署后改成你自己的仓库地址，页脚的链接会指向它。留空则隐藏该链接。 */
-export const REPO_URL = '';
+export const REPO_URL = 'https://github.com/960668/dream-reframe';

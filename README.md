@@ -2,7 +2,7 @@
 
 > 把一段醒来后即将遗忘的梦，重构成可以被看见的画面，和一组可以直接喂给文生图模型的视觉提示词。
 
-**在线体验**：https://&lt;你的用户名&gt;.github.io/dream-reframe/　（部署后把这里换成真实地址）
+**在线体验**：https://960668.github.io/dream-reframe/
 
 ![首屏](assets/shot-hero.png)
 
@@ -215,7 +215,7 @@ git push -u origin main
 ### 4. 收尾
 
 - 把 `src/config.js` 里的 `REPO_URL` 改成你的仓库地址，页脚链接才会生效
-- 把 README 顶部的「在线体验」占位地址换成真实的 Pages 地址
+- 把 README 顶部的「在线体验」地址换成真实的 Pages 地址
 - 在仓库 **About** 里填一句话简介，并把 `assets/shot-result.png` 设为 social preview（分享到微信/Twitter 时显示这张图）
 
 ### 部署后注意：没有本地代理了
