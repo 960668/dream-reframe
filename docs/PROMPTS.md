@@ -113,3 +113,44 @@ echo "我梦见在图书馆里，地板是白色的瓷砖..." > /tmp/dream-fixtu
 **实验 C · 试探风格锚点的边界**
 
 把 `VISUAL_SYSTEM` 规则 1 的词数改成 `5-15`，看画面是否开始松散；再改成 `60-90`，看模型是否开始忽略一部分描述。这比读任何教程都更能理解锚点长度的意义。
+
+---
+
+## 六、出图侧的旋钮
+
+文字侧决定画面的**内容**，出图侧决定画面的**质感**。前者占效果的八成——如果你觉得图不对，先怀疑文字侧的提示词，再动这里。
+
+### 旋钮在哪
+
+| # | 位置 | 管什么 |
+|---|---|---|
+| 1 | `src/prompts.js` → `IMAGE_GUARD` | 附加在每条提示词末尾的约束（防文字、防过度干净） |
+| 2 | `src/prompts.js` → `composeImagePrompt` | 约束的拼装方式（正向拼 vs 单独下发） |
+| 3 | `src/config.js` → `PROVIDERS[].image` | 出图模型、支持的尺寸、尺寸字段名、是否支持 negative_prompt |
+
+### 最终提示词是怎么拼出来的
+
+```
+画面提示词（VISUAL_SYSTEM 生成）
+  + 风格锚点（同上，保证跨画面一致）
+  + IMAGE_GUARD（出图约束）
+```
+
+支持 `negative_prompt` 的接口（硅基流动 Kolors）会把 `IMAGE_GUARD` 单独下发，不污染正向提示词；不支持的（智谱 CogView）只能拼在末尾。这个分流由 `provider.image.negative` 决定，**改 `IMAGE_GUARD` 不需要动其他任何文件**。
+
+### 症状 → 该改哪里
+
+| 你看到的症状 | 改哪里 | 怎么改 |
+|---|---|---|
+| 画面太干净、像素材库照片 | `IMAGE_GUARD` | 加 `uneven lighting, dust, slight blur` |
+| 画面里冒出乱码文字或招牌 | `IMAGE_GUARD` | 确认 `no legible text, no signage` 还在 |
+| 每张图人脸都不一样 / 崩坏 | `IMAGE_GUARD` | `no visible faces` 是默认，别删；或让文字侧多写背影、遮挡 |
+| 图太亮太「日光」 | `IMAGE_GUARD` | 加 `underexposed, deep shadows, low key` |
+| 几张图风格不统一 | **不是出图侧的问题** | 回到 `VISUAL_SYSTEM` 规则 1 调风格锚点 |
+| 报「尺寸不被支持」 | `config.js` 的 `sizePreset` | 该服务商只认列表里的值，别手填别的 |
+| 报 400 / 404 / 模型不存在 | 设置面板的「图片模型」 | 先确认模型名，再确认接口地址是同一域名 |
+| 免费模型触发限流 | 不用改代码 | 出图本来就是串行的；失败的单张点「重试」即可 |
+
+### 一个刻意的设计
+
+出图是**串行**的（`pipeline.js` 的 `renderDreamImages`），不是并行。免费模型普遍有并发限制，同时发四张的结果往往是四张一起被限流。单张失败也不会中断整批——把成功的留下，失败的单独重试，比全部作废有用。

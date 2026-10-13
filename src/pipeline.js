@@ -1,7 +1,8 @@
 /**
- * 两段式链路：
+ * 流式链路（两段，加上可选的出图）：
  *   1) 解析梦境 + 编排画面  —— 合并为一次调用，省一次往返
  *   2) 生成视觉提示词        —— 依赖第 1 步的结构化结果
+ *   3) 出图（可选）          —— 见文件末尾，可跳过、可单张重来
  *
  * 合并第 1、2 步是一个刻意的取舍：解析和编排共享同一份上下文，
  * 拆成两次调用只会多付一次延迟和一次输入 token，换不到质量提升。
@@ -11,9 +12,12 @@
  * 视角与构图交给第二段按画面内容决定。
  */
 import { chat, extractJson } from './llm.js';
+import { generateImage, imageConfigOf } from './image.js';
 import {
   ANALYZE_SYSTEM,
   analyzeUserPrompt,
+  composeImagePrompt,
+  IMAGE_GUARD,
   VISUAL_SYSTEM,
   visualUserPrompt,
 } from './prompts.js';
@@ -107,8 +111,78 @@ export async function reframeDream(dream, settings, hooks = {}) {
   return merged;
 }
 
+/* ================================================================
+ * 出图
+ *
+ * 出图和文字是两条独立的链路，刻意没有合并：
+ *   文字链路必然要跑，出图是可选的一步——用户可能只想拿提示词去
+ *   Midjourney 出图。把它做成可跳过、可单张重来的步骤，
+ *   比绑成一次调用更符合真实用法。
+ * ================================================================ */
+
+export { imageConfigOf };
+
+/**
+ * 单个画面的最终提示词：
+ *   画面提示词 + 风格锚点（第一步拼好）+ 出图约束（这里拼）。
+ * 支持 negative_prompt 的接口会把约束单独下发，不污染正向提示词。
+ */
+export function imagePromptOf(shot, settings) {
+  const cfg = imageConfigOf(settings);
+  return composeImagePrompt(shot.fullPrompt || shot.prompt || '', {
+    supportsNegative: Boolean(cfg?.negative),
+  });
+}
+
+/** 生成单个画面的图。批量出图和「换一张」共用这一个入口。 */
+export async function generateShotImage(shot, settings, { signal } = {}) {
+  const cfg = imageConfigOf(settings);
+  const { url } = await generateImage({
+    settings,
+    prompt: imagePromptOf(shot, settings),
+    negativePrompt: cfg?.negative ? IMAGE_GUARD : '',
+    size: settings.imageSize,
+    signal,
+  });
+  return url;
+}
+
+/**
+ * 逐个画面出图。
+ *
+ * 串行而不是并行：免费出图模型普遍有并发限制，同时发四张的结果
+ * 往往是四张一起被限流。串行虽慢，但稳定拿到图。
+ *
+ * 单张失败不中断整批——限流和内容审核都是常态，把已经成功的那几张
+ * 留下来，比整批作废有用得多。
+ */
+export async function renderDreamImages(result, settings, hooks = {}) {
+  const { signal, onShotStart, onShotDone, onShotFail } = hooks;
+  const shots = result.shots ?? [];
+  const images = new Map();
+  const errors = new Map();
+
+  for (let i = 0; i < shots.length; i += 1) {
+    const shot = shots[i];
+    if (signal?.aborted) break;
+
+    onShotStart?.(shot.no, i, shots.length);
+    try {
+      const url = await generateShotImage(shot, settings, { signal });
+      images.set(shot.no, url);
+      onShotDone?.(shot.no, url);
+    } catch (err) {
+      if (signal?.aborted) break;
+      errors.set(shot.no, err);
+      onShotFail?.(shot.no, err);
+    }
+  }
+
+  return { images, errors };
+}
+
 /** 导出用的精简结构，去掉展示层的冗余字段。 */
-export function toExport(result, dream) {
+export function toExport(result, dream, images = new Map()) {
   return {
     generator: 'dream-reframe',
     generatedAt: new Date().toISOString(),
@@ -125,6 +199,8 @@ export function toExport(result, dream) {
       emotion: s.emotion,
       sensation: s.sensation,
       prompt: s.fullPrompt,
+      // 出图是可选的一步，没生成的画面就不带这个字段。
+      ...(images.get(s.no) ? { image: images.get(s.no) } : {}),
     })),
   };
 }

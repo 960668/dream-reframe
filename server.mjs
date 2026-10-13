@@ -57,7 +57,13 @@ async function serveStatic(req, res) {
   }
 }
 
-async function proxyChat(req, res) {
+/**
+ * 把请求转发到上游。
+ * 对话是流式的（边收边发，用户能看见字一个个出来）；
+ * 出图是一次性 JSON（等十几秒，然后一次返回）。
+ * 两者只差「是否边收边发」，所以合并成一个函数。
+ */
+async function forward(req, res, { suffix, stream }) {
   const upstream = req.headers['x-upstream-base-url'];
   const auth = req.headers.authorization;
 
@@ -73,7 +79,7 @@ async function proxyChat(req, res) {
 
   let target;
   try {
-    target = new URL(`${String(upstream).replace(/\/+$/, '')}/chat/completions`);
+    target = new URL(`${String(upstream).replace(/\/+$/, '')}${suffix}`);
   } catch {
     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ error: { message: '接口地址不是合法的 URL。' } }));
@@ -88,9 +94,9 @@ async function proxyChat(req, res) {
     });
 
     res.writeHead(upstreamRes.status, {
-      'Content-Type': upstreamRes.headers.get('content-type') || 'text/event-stream; charset=utf-8',
+      'Content-Type': upstreamRes.headers.get('content-type') || 'application/json; charset=utf-8',
       'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+      ...(stream ? { Connection: 'keep-alive' } : {}),
     });
 
     if (!upstreamRes.body) {
@@ -113,7 +119,11 @@ async function proxyChat(req, res) {
 
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/api/chat') {
-    proxyChat(req, res);
+    forward(req, res, { suffix: '/chat/completions', stream: true });
+    return;
+  }
+  if (req.method === 'POST' && req.url === '/api/image') {
+    forward(req, res, { suffix: '/images/generations', stream: false });
     return;
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') {

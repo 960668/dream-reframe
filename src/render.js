@@ -29,7 +29,121 @@ function chip(text, className) {
   return span;
 }
 
-function shotCard(shot, index) {
+/* ---------- 画面图片位 ---------- */
+
+/**
+ * 一个画面卡里的图片区。
+ *
+ * 状态由外部驱动（app.js 才知道出图跑到哪了），这里只提供两个方法：
+ *   createShotMedia  造出这个区域
+ *   updateShotMedia  把它切到某个状态
+ * 分开是为了让「生成中 / 成功 / 失败 / 未生成」四种状态用同一套 DOM 更新，
+ * 不必在业务代码里拼节点。
+ */
+function createShotMedia(shot, { onGenerate } = {}) {
+  const media = document.createElement('div');
+  media.className = 'shot-media';
+
+  const frame = document.createElement('div');
+  frame.className = 'shot-media-frame';
+
+  const bar = document.createElement('div');
+  bar.className = 'shot-media-bar';
+
+  const state = document.createElement('span');
+  state.className = 'shot-media-state';
+
+  const btn = document.createElement('button');
+  btn.className = 'btn-copy shot-media-btn';
+  btn.type = 'button';
+  btn.addEventListener('click', () => onGenerate?.(shot, media));
+
+  bar.append(state, btn);
+  media.append(frame, bar);
+
+  updateShotMedia(media, { state: 'idle' });
+  return media;
+}
+
+/** 把图片区切到指定状态。state: idle | loading | done | error | off */
+export function updateShotMedia(media, opts = {}) {
+  const { state = 'idle', url = '', message = '', caption = '', actionEnabled = true } = opts;
+  if (!media) return;
+
+  media.dataset.state = state;
+  const frame = media.querySelector('.shot-media-frame');
+  const label = media.querySelector('.shot-media-state');
+  const btn = media.querySelector('.shot-media-btn');
+  frame.replaceChildren();
+
+  if (state === 'loading') {
+    const wrap = document.createElement('div');
+    wrap.className = 'shot-media-loading';
+    const dot = document.createElement('span');
+    dot.className = 'spinner';
+    const text = document.createElement('span');
+    text.textContent = message || '正在出图，免费模型通常要十几秒…';
+    wrap.append(dot, text);
+    frame.appendChild(wrap);
+    label.textContent = '生成中';
+    btn.hidden = true;
+    return;
+  }
+
+  if (state === 'done') {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = caption || '生成的画面';
+    img.loading = 'lazy';
+
+    const open = document.createElement('a');
+    open.className = 'shot-media-open';
+    open.href = url;
+    open.target = '_blank';
+    open.rel = 'noopener';
+    open.textContent = '查看原图 ↗';
+
+    frame.append(img, open);
+    label.textContent = '已生成';
+    btn.hidden = !actionEnabled;
+    btn.disabled = !actionEnabled;
+    btn.textContent = '换一张';
+    return;
+  }
+
+  if (state === 'error') {
+    const p = document.createElement('p');
+    p.className = 'shot-media-note is-error';
+    p.textContent = message || '这张没生成出来。';
+    frame.appendChild(p);
+    label.textContent = '失败';
+    btn.hidden = false;
+    btn.disabled = false;
+    btn.textContent = '重试';
+    return;
+  }
+
+  if (state === 'off') {
+    const p = document.createElement('p');
+    p.className = 'shot-media-note';
+    p.textContent = message || '这个服务商没有出图接口。提示词可以直接拿去别处生成。';
+    frame.appendChild(p);
+    label.textContent = '不出图';
+    btn.hidden = true;
+    return;
+  }
+
+  const p = document.createElement('p');
+  p.className = 'shot-media-note';
+  p.textContent = message || '这个画面还没有生成图片';
+  frame.appendChild(p);
+  label.textContent = '未生成';
+  btn.hidden = false;
+  btn.disabled = false;
+  btn.textContent = '生成这张';
+}
+
+function shotCard(shot, index, handlers) {
   const card = document.createElement('article');
   card.className = 'shot';
 
@@ -54,6 +168,9 @@ function shotCard(shot, index) {
   }
 
   card.appendChild(head);
+
+  const media = createShotMedia(shot, handlers);
+  card.appendChild(media);
 
   if (shot.scene) {
     const scene = document.createElement('p');
@@ -104,28 +221,14 @@ function shotCard(shot, index) {
     card.append(promptHead, pre);
   }
 
-  // 示例流程专属：仓库里预置的成片图，证明这条提示词真的能出这个画面。
-  // 真实模型输出没有这个字段，自然不会显示。
-  if (shot.demoImage) {
-    const figure = document.createElement('figure');
-    figure.className = 'shot-demo-figure';
-
-    const img = document.createElement('img');
-    img.src = shot.demoImage;
-    img.alt = `${shot.caption || '画面'} 的示例成片`;
-    img.loading = 'lazy';
-
-    const figcaption = document.createElement('figcaption');
-    figcaption.textContent = '示例成片 · 由上方这条提示词生成';
-
-    figure.append(img, figcaption);
-    card.appendChild(figure);
-  }
-
-  return card;
+  return { card, media, shot };
 }
 
-export function renderResult(result, { demo = false } = {}) {
+/**
+ * 画结果区。
+ * @returns {{media: Map<number, HTMLElement>}} 供 app.js 驱动出图状态
+ */
+export function renderResult(result, { demo = false, onGenerateShot } = {}) {
   $('dreamTitle').textContent = result.title;
   $('dreamThesis').textContent = result.thesis;
 
@@ -146,12 +249,35 @@ export function renderResult(result, { demo = false } = {}) {
   }
 
   const shots = result.shots ?? [];
-  $('shots').replaceChildren(...shots.map(shotCard));
+  const built = shots.map((shot, i) => shotCard(shot, i, { onGenerate: onGenerateShot }));
+  $('shots').replaceChildren(...built.map((b) => b.card));
   $('shotCount').textContent = `${shots.length} 个画面`;
+
+  const media = new Map(built.map((b) => [b.shot.no, b.media]));
+
+  // 示例流程：仓库里预置的成片图，证明这条提示词真的能出这个画面。
+  // 置为 done 且禁用按钮——示例图是固定的，重生成没有意义。
+  if (demo) {
+    built.forEach(({ shot, media: el }) => {
+      if (shot.demoImage) {
+        updateShotMedia(el, {
+          state: 'done',
+          url: shot.demoImage,
+          caption: `${shot.caption} 的示例成片`,
+          actionEnabled: false,
+        });
+        el.querySelector('.shot-media-state').textContent = '示例成片';
+      } else {
+        updateShotMedia(el, { state: 'off', message: '示例数据只配了两张成片。真实运行时会为每个画面出图。' });
+      }
+    });
+  }
 
   const box = $('result');
   box.hidden = false;
   box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  return { media };
 }
 
 export function renderSkeleton() {

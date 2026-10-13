@@ -1,7 +1,7 @@
 {
   "name": "dream-reframe",
-  "version": "0.1.0",
-  "description": "把一段醒来后即将遗忘的梦境，重构成可以被看见的画面与可执行的视觉提示词。",
+  "version": "0.2.0",
+  "description": "把一段醒来后即将遗忘的梦境，重构成可以被看见的画面与可执行的视觉提示词，并可用免费文生图模型一键出图。",
   "type": "module",
   "private": true,
   "scripts": {

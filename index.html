@@ -58,6 +58,34 @@
         <span>经本地代理转发（浏览器直连被跨域拦截时勾选，需先运行 <code>node server.mjs</code>）</span>
       </label>
 
+      <div class="settings-divider"><span>出图（可选）</span></div>
+
+      <p class="field-hint" id="imageHint" hidden></p>
+
+      <div class="grid">
+        <label class="field">
+          <span>图片模型</span>
+          <input id="imageModel" type="text" spellcheck="false" placeholder="cogview-3-flash">
+        </label>
+        <label class="field">
+          <span>图片尺寸</span>
+          <select id="imageSize"></select>
+        </label>
+        <label class="field">
+          <span>尺寸字段名</span>
+          <select id="sizeKey"></select>
+        </label>
+      </div>
+
+      <p class="field-hint">
+        图片模型留空则用服务商默认值。尺寸和字段名填错会被接口直接拒绝，拿不准就别改。
+      </p>
+
+      <label class="check">
+        <input type="checkbox" id="autoImage">
+        <span>重构完成后自动出图（关掉后可以逐个画面单独生成，省额度也更好控制）</span>
+      </label>
+
       <div class="controls">
         <button class="btn-primary btn-sm" type="button" id="saveSettings">保存设置</button>
         <a class="link-muted" id="keyHelp" href="#" target="_blank" rel="noopener">去哪里拿 Key？</a>
@@ -90,6 +118,7 @@
       <li data-step="analyze"><span class="dot"></span>解析梦境</li>
       <li data-step="storyboard"><span class="dot"></span>编排画面</li>
       <li data-step="visual"><span class="dot"></span>生成视觉提示词</li>
+      <li data-step="image"><span class="dot"></span>出图</li>
     </ol>
   </section>
 
@@ -124,6 +153,7 @@
     </article>
 
     <article class="panel actions-panel">
+      <button class="btn-ghost btn-sm" type="button" id="imageAllBtn">生成全部画面</button>
       <button class="btn-ghost btn-sm" type="button" id="copyAll">复制全部提示词</button>
       <button class="btn-ghost btn-sm" type="button" id="downloadJson">导出 JSON</button>
       <button class="btn-ghost btn-sm" type="button" id="resetBtn">清空重来</button>

@@ -96,3 +96,43 @@ ${JSON.stringify(
 
 请为它生成风格锚点和每个画面的英文提示词。`;
 }
+
+/* ================================================================
+ * 出图侧约束
+ *
+ * 以上三段（ANALYZE_SYSTEM / VISUAL_SYSTEM / 两个 userPrompt）是拿给
+ * 「语言模型」看的，决定文字读起来像不像梦。
+ *
+ * 下面这些是拿给「文生图模型」看的，决定画面看起来像不像梦。
+ * 想调整出图效果，改这一段就够了 —— 不需要动 UI 或链路代码。
+ * ================================================================ */
+
+/**
+ * IMAGE_GUARD：附加在每条画面提示词上的补充约束。
+ *
+ * 它主要压两个文生图模型的坏习惯：
+ *   1. 往画面里塞文字。模型渲染文字几乎必崩，不如一开始就不让它写。
+ *   2. 把一切画得太干净、太完美，反而失去梦的脏感。
+ *
+ * 常见改法：
+ *   - 画面太干净、像素材库 → 加 uneven lighting, dust, slight blur, film grain
+ *   - 冒出乱码文字或招牌 → 加 no text, no signage, no subtitles
+ *   - 人脸崩坏或每张脸都不一样 → 明确写 no faces，或用背影、遮挡、虚化
+ *   - 想要更暗更闷 → 加 underexposed, deep shadows, low key
+ *   - 完全不想要额外约束 → 设成空字符串 ''
+ */
+export const IMAGE_GUARD =
+  'no legible text, no logos, no visible faces, natural imperfect lighting, film grain';
+
+/**
+ * 最终提示词的拼装规则。
+ *
+ * 支持 negative_prompt 的接口（如硅基流动的 Kolors）会把约束单独下发，
+ * 不污染正向提示词；不支持的（如智谱 CogView）只能拼在提示词末尾。
+ * 这个差异由 config.js 里的 provider.image.negative 决定。
+ */
+export function composeImagePrompt(fullPrompt, { supportsNegative = false } = {}) {
+  const base = String(fullPrompt || '').trim();
+  if (!IMAGE_GUARD.trim()) return base;
+  return supportsNegative ? base : `${base}, ${IMAGE_GUARD}`;
+}

@@ -347,23 +347,109 @@ textarea:focus {
   word-break: break-word;
 }
 
-/* 示例成片图（仅示例流程渲染） */
-.shot-demo-figure {
-  margin: 14px 0 0;
+/* 画面图片位。
+   四种状态（未生成 / 生成中 / 已生成 / 失败）共用同一个框，
+   避免切换时布局跳动；状态色只体现在下方那行小字上。 */
+.shot-media { margin: 4px 0 14px; }
+
+.shot-media-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  overflow: hidden;
 }
 
-.shot-demo-figure img {
+.shot-media-frame img {
   display: block;
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--line);
+  height: auto;
 }
 
-.shot-demo-figure figcaption {
+.shot-media-open {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  color: var(--ink);
+  background: rgba(8, 11, 22, 0.72);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+}
+
+.shot-media-note {
+  margin: 0;
+  padding: 30px 18px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+
+.shot-media-note.is-error { color: var(--danger); }
+
+.shot-media-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px 18px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(95, 227, 192, 0.22);
+  border-top-color: var(--teal);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.shot-media-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 8px;
+}
+
+.shot-media-state {
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--ink-3);
+}
+
+.shot-media[data-state="done"] .shot-media-state { color: var(--teal); }
+.shot-media[data-state="loading"] .shot-media-state { color: var(--amber); }
+.shot-media[data-state="error"] .shot-media-state { color: var(--danger); }
+
+/* 设置面板里的分组标题 */
+.settings-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.settings-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 
 /* 画面与提示词 */
@@ -525,6 +611,13 @@ textarea:focus {
 .field select { font-family: var(--sans); font-size: 13.5px; }
 .field input:focus,
 .field select:focus { outline: none; border-color: rgba(155, 140, 255, 0.55); }
+
+/* 服务商没有出图接口时把这些输入框关掉，而不是让用户白填一遍 */
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .check {
   display: flex;

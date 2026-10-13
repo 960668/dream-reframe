@@ -3,7 +3,7 @@
  * 只做一件事：把消息发出去，把流式增量交回来。
  * 密钥来自浏览器本地存储，不上传、不落库。
  */
-import { STORAGE_KEY, PROVIDERS } from './config.js';
+import { DEFAULT_IMAGE_SIZE, STORAGE_KEY, PROVIDERS } from './config.js';
 
 const DEFAULT_SETTINGS = Object.freeze({
   providerId: 'deepseek',
@@ -11,6 +11,11 @@ const DEFAULT_SETTINGS = Object.freeze({
   model: PROVIDERS[0].model,
   apiKey: '',
   useProxy: false,
+  // 出图侧。imageModel 留空表示用当前服务商的默认出图模型。
+  imageModel: '',
+  imageSize: DEFAULT_IMAGE_SIZE,
+  sizeKey: '',
+  autoImage: true,
 });
 
 export function loadSettings() {
