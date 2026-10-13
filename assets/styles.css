@@ -347,6 +347,25 @@ textarea:focus {
   word-break: break-word;
 }
 
+/* 示例成片图（仅示例流程渲染） */
+.shot-demo-figure {
+  margin: 14px 0 0;
+}
+
+.shot-demo-figure img {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.shot-demo-figure figcaption {
+  margin-top: 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
 /* 画面与提示词 */
 .shots { display: flex; flex-direction: column; gap: 14px; }
 

@@ -31,6 +31,8 @@ export const DEMO_SAMPLE = {
       sensation: '脚底是干的，却听得见水在退。空气里有铁锈和湿纸的味道。',
       prompt:
         'vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, wide symmetrical composition, no people',
+      /** 与 assets/demo-shot-01.png 一一对应，仅示例流程使用 */
+      demoImage: 'assets/demo-shot-01.png',
       fullPrompt:
         'vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, wide symmetrical composition, no people, cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
     },
@@ -67,6 +69,8 @@ export const DEMO_SAMPLE = {
       sensation: '离得越远，越能感觉到那些字擦过手背。海水不凉，像刚洗过的手。',
       prompt:
         'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, distant wide shot, camera rising slowly',
+      /** 与 assets/demo-shot-04.png 一一对应，仅示例流程使用 */
+      demoImage: 'assets/demo-shot-04.png',
       fullPrompt:
         'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, distant wide shot, camera rising slowly, cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
     },

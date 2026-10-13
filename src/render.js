@@ -104,6 +104,24 @@ function shotCard(shot, index) {
     card.append(promptHead, pre);
   }
 
+  // 示例流程专属：仓库里预置的成片图，证明这条提示词真的能出这个画面。
+  // 真实模型输出没有这个字段，自然不会显示。
+  if (shot.demoImage) {
+    const figure = document.createElement('figure');
+    figure.className = 'shot-demo-figure';
+
+    const img = document.createElement('img');
+    img.src = shot.demoImage;
+    img.alt = `${shot.caption || '画面'} 的示例成片`;
+    img.loading = 'lazy';
+
+    const figcaption = document.createElement('figcaption');
+    figcaption.textContent = '示例成片 · 由上方这条提示词生成';
+
+    figure.append(img, figcaption);
+    card.appendChild(figure);
+  }
+
   return card;
 }
 
