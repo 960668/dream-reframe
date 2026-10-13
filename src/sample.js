@@ -3,9 +3,12 @@
  * 用途有两个：给输入框提供灵感，以及在没有配置 Key 时也能看到完整交互。
  * 走示例路径时界面会明确标注「示例数据」，不会伪装成模型输出。
  *
- * 注意：DEMO_SAMPLE 里的提示词与 README 中的两张成片图
- * （assets/demo-shot-01.png / demo-shot-04.png）严格对应，
- * 改动提示词时请同步重新生成图片，否则「可直接复现」这句话就不成立了。
+ * 提示词与 VISUAL_SYSTEM 的输出规则一致：画面语法（构图、视角允许），
+ * 不含景别与运镜；风格锚点走「梦境质感」，不走电影质感。
+ *
+ * 注意：assets/ 下的两张示例成片（demo-shot-01/04.png）由早期版本的
+ * 电影语法锚点生成，与下方当前的提示词并非同源。用当前锚点重新生成
+ * 的待办记录在 docs/ROADMAP.md 的技术债一节。
  */
 
 export const SAMPLE_DREAMS = [
@@ -14,13 +17,15 @@ export const SAMPLE_DREAMS = [
   `有个人在街角摆了个摊，牌子上写着"归还影子"。排队的人都捧着自己扁扁的影子。轮到我的时候，摊主说我的影子不是我的，让我明天再来。`,
 ];
 
+const DREAM_ANCHOR =
+  'grainy dream photograph, muted teal and bone white palette, soft focus bleeding into hyper-sharp detail, subtle perspective distortion, light with no visible source, edges dissolving into darkness that never turns fully black, film grain';
+
 export const DEMO_SAMPLE = {
   title: '退潮的图书馆',
   thesis: '一座和你一起呼吸的图书馆，最后把读过的字还给了海。',
   mood: ['失重', '潮汐般的安静', '舍不得'],
   motifs: ['会呼吸的书架', '退潮的瓷砖地', '玻璃楼梯', '消失了的天花板'],
-  styleAnchor:
-    'cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
+  styleAnchor: DREAM_ANCHOR,
   shots: [
     {
       no: 1,
@@ -30,11 +35,9 @@ export const DEMO_SAMPLE = {
       emotion: '屏息',
       sensation: '脚底是干的，却听得见水在退。空气里有铁锈和湿纸的味道。',
       prompt:
-        'vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, wide symmetrical composition, no people',
-      /** 与 assets/demo-shot-01.png 一一对应，仅示例流程使用 */
+        'vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, symmetrical composition, no people',
       demoImage: 'assets/demo-shot-01.png',
-      fullPrompt:
-        'vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, wide symmetrical composition, no people, cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
+      fullPrompt: `vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, symmetrical composition, no people, ${DREAM_ANCHOR}`,
     },
     {
       no: 2,
@@ -44,9 +47,8 @@ export const DEMO_SAMPLE = {
       emotion: '奇异',
       sensation: '抬头追它的时候脖子一点也不酸。风是从书页里出来的，不冷。',
       prompt:
-        'rows of bookshelves breathing in and out like a ribcage, thin light leaking through the gaps, a single blue hardcover floating at head height, turning slowly in the air, medium shot, shallow depth of field',
-      fullPrompt:
-        'rows of bookshelves breathing in and out like a ribcage, thin light leaking through the gaps, a single blue hardcover floating at head height, turning slowly in the air, medium shot, shallow depth of field, cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
+        'rows of bookshelves breathing in and out like a ribcage, thin light leaking through the gaps, a single blue hardcover floating at head height, turning slowly in the air, shallow depth of field',
+      fullPrompt: `rows of bookshelves breathing in and out like a ribcage, thin light leaking through the gaps, a single blue hardcover floating at head height, turning slowly in the air, shallow depth of field, ${DREAM_ANCHOR}`,
     },
     {
       no: 3,
@@ -56,9 +58,8 @@ export const DEMO_SAMPLE = {
       emotion: '错位',
       sensation: '每踩一级，身体就轻一点。影子先走，我后到，可我们明明是一起动的。',
       prompt:
-        'endless glass staircase ascending into haze, each step rippling like water when touched, a lone human shadow climbing one step ahead of the viewer, low angle, slight handheld motion',
-      fullPrompt:
-        'endless glass staircase ascending into haze, each step rippling like water when touched, a lone human shadow climbing one step ahead of the viewer, low angle, slight handheld motion, cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
+        'endless glass staircase ascending into haze, each step rippling like water when touched, a lone human shadow climbing one step ahead of the viewer',
+      fullPrompt: `endless glass staircase ascending into haze, each step rippling like water when touched, a lone human shadow climbing one step ahead of the viewer, ${DREAM_ANCHOR}`,
     },
     {
       no: 4,
@@ -68,11 +69,9 @@ export const DEMO_SAMPLE = {
       emotion: '释然',
       sensation: '离得越远，越能感觉到那些字擦过手背。海水不凉，像刚洗过的手。',
       prompt:
-        'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, distant wide shot, camera rising slowly',
-      /** 与 assets/demo-shot-04.png 一一对应，仅示例流程使用 */
+        'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, seen from far away',
       demoImage: 'assets/demo-shot-04.png',
-      fullPrompt:
-        'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, distant wide shot, camera rising slowly, cinematic film still, muted teal and bone white palette, soft volumetric haze, wet reflective surfaces, 35mm anamorphic lens, shallow depth of field, quiet symmetrical composition, overcast diffused light',
+      fullPrompt: `library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, seen from far away, ${DREAM_ANCHOR}`,
     },
   ],
 };

@@ -75,7 +75,6 @@ function mergeVisual(analysis, raw) {
  */
 export async function reframeDream(dream, settings, hooks = {}) {
   const { signal, onStage, onProgress } = hooks;
-  let received = 0;
   const progress = (full) => onProgress?.(full.length);
 
   onStage?.('analyze');
@@ -91,7 +90,6 @@ export async function reframeDream(dream, settings, hooks = {}) {
   });
   const analysis = normalizeAnalysis(extractJson(analysisText));
   onStage?.('storyboard');
-  received = 0;
 
   onStage?.('visual');
   const visualText = await chat({
@@ -105,7 +103,6 @@ export async function reframeDream(dream, settings, hooks = {}) {
     onDelta: (_delta, full) => progress(full),
   });
   const merged = mergeVisual(analysis, extractJson(visualText));
-  void received;
 
   onStage?.('done');
   return merged;

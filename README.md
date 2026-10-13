@@ -41,7 +41,7 @@
 
 ## 风格锚点的实际效果
 
-下面两张图来自同一个梦境的两个画面，提示词完全由上面的链路生成，没有人工修改。注意它们共享同一条风格锚点，所以色调、质感、影调是一致的——这就是跨画面一致性的解法。
+下面两张图来自同一个梦境的两个画面，提示词完全由链路生成，没有人工修改。它们共享同一条风格锚点，所以色调、质感、影调是一致的——这就是跨画面一致性的解法。
 
 **画面 01 · 潮水退去**
 
@@ -51,7 +51,7 @@
 
 ![画面 04](assets/demo-shot-04.png)
 
-> 两条提示词的完整原文在 `src/sample.js` 里，可以直接复制去复现。
+> 这两张成片由项目早期版本的风格锚点生成。当前锚点已转向「梦境质感」（见下方设计取舍），用当前提示词重新生成两张图是待办之一。
 
 ## 快速开始
 
@@ -66,7 +66,7 @@ node server.mjs        # 或者 npm start
 打开 <http://127.0.0.1:8080>：
 
 1. 展开「模型设置」，选服务商（DeepSeek / 智谱 / Kimi / 通义 / 硅基流动 / OpenAI，或任意 OpenAI 兼容接口）
-2. 粘贴你的 API Key，保存
+2. 粘贴你的 API Key，**点「保存设置」**
 3. 描述一个梦，点「重构这个梦」
 
 没有 Key 也能玩：点「看示例效果」可以走完整个交互流程（页面会明确标注这是示例数据）。
@@ -144,11 +144,12 @@ dream-reframe/
 
 要加一个新字段（比如「听觉」），需要同步改三处：`ANALYZE_SYSTEM` 的 JSON 结构、`pipeline.js` 的 `normalizeAnalysis`、`render.js` 的渲染函数。漏掉后两处，模型的输出会掉进虚空。
 
-改完提示词记得同步更新 `src/sample.js` 的示例数据；如果连示例提示词一起改了，README 里那两张成片图也要重新生成，否则「可直接复现」这句话就不成立了。
+改完提示词记得同步更新 `src/sample.js` 的示例数据；示例成片图也要用新提示词重新生成，否则「示例」与「数据」就对不上了。
 
 ## 局限
 
-- 出图直接从浏览器调用服务商接口，所以只能用允许跨域直连的服务商（上面的表格里都标了）；想要完全不受限，需要一个服务端，见 Roadmap
+- 出图直接从浏览器调用服务商接口，所以只能用允许跨域直连的服务商（上面的表格里都标了）
+- **部署到 GitHub Pages 后不要勾「经本地代理转发」**——Pages 是纯静态托管，没有 `/api/*` 后端，勾了所有请求都会被拒绝（HTTP 405）。代理只在本机运行 `node server.mjs` 时有意义
 - 出图的一致性靠提示词级别的风格锚点，不是模型级别的（LoRA / 参考图），跨画面的人物面部一致性没有保证
 - 梦境记录不做云端留存，这是一次性的工具，不是档案库
 
@@ -156,105 +157,14 @@ dream-reframe/
 
 见 [docs/ROADMAP.md](docs/ROADMAP.md)。下一优先级是**梦境档案**：登录 + 云数据库，把每晚的梦攒成一本可翻的册子。
 
-## 发布到 GitHub
+## 部署到你自己的仓库
 
-### 0. 先配好 git 身份
+项目没有构建步骤，仓库自带 GitHub Pages 工作流（`.github/workflows/deploy.yml`）：
 
-这一步不能跳。没有身份，提交会挂在一个匿名账号下，**GitHub 上不会算到你的贡献记录里**，招聘方点进 commit 也看不到作者是谁。
-
-```bash
-git config --global user.name "你的名字"
-git config --global user.email "你的 GitHub 邮箱"
-```
-
-邮箱建议用 GitHub 账户里设置的那个（Settings → Emails），否则头像和贡献图都不会关联。
-
-### 1. 在 GitHub 上建一个空仓库
-
-浏览器打开 https://github.com/new ，仓库名 `dream-reframe`。
-
-**不要勾选** "Add a README file"、"Add .gitignore"、"Choose a license"——本地已经有了，勾了会导致 push 冲突。
-
-### 2. 关联并推送
-
-推荐用 HTTPS + Token，因为你这台机器还没有 SSH 密钥：
-
-```bash
-cd /Users/mac/WorkBuddy/2026-10-13-14-57-46/dream-reframe
-git remote add origin https://github.com/<你的用户名>/dream-reframe.git
-git push -u origin main
-```
-
-推送时会要求输入账号密码。**密码栏要填 Personal Access Token，不是你的 GitHub 登录密码**：
-
-1. 打开 https://github.com/settings/tokens
-2. Generate new token → 勾选 `repo` 权限 → 生成后复制
-3. 粘到密码栏（终端里不会显示字符，这是正常的）
-
-Mac 上第一次输入后会被 Keychain 记住，之后不用再输。
-
-<details>
-<summary>或者：装 gh CLI，一条命令建仓库 + 推送（推荐长期使用）</summary>
-
-```bash
-brew install gh
-gh auth login          # 按提示选 HTTPS，浏览器授权
-cd /Users/mac/WorkBuddy/2026-10-13-14-57-46/dream-reframe
-gh repo create dream-reframe --public --source=. --push
-```
-
-好处是不用手动建仓库、不用管理 Token，`gh` 会自动处理凭据并写进 Keychain。
-
-</details>
-
-<details>
-<summary>或者：用 SSH（需要先生成密钥）</summary>
-
-你这台机器目前没有 SSH 密钥。生成并添加：
-
-```bash
-ssh-keygen -t ed25519 -C "你的 GitHub 邮箱"   # 一路回车
-pbcopy < ~/.ssh/id_ed25519.pub                # 复制公钥
-```
-
-然后打开 https://github.com/settings/keys → New SSH key → 粘贴 → 保存。
-
-```bash
-git remote add origin git@github.com:<你的用户名>/dream-reframe.git
-git push -u origin main
-```
-
-</details>
-
-### 3. 打开自动部署（这一步别跳过）
-
-仓库里已经放好了 `.github/workflows/deploy.yml`。推上去之后：
-
-1. 进入仓库 **Settings → Pages**
-2. 把 **Source** 从 "Deploy from a branch" 改成 **"GitHub Actions"**
-3. 回到 **Actions** 标签页，看到 "Deploy to GitHub Pages" 跑完（约 1 分钟）
-
-地址就是 `https://<你的用户名>.github.io/dream-reframe/`。以后每次 push 到 main 都会自动更新。
-
-**这一步比仓库本身重要。** 面试官不会 clone 你的代码跑一遍，但会点开一个链接试用。README 第一段放上这个地址，效果远好于十页代码。
-
-### 4. 收尾
-
-- 把 `src/config.js` 里的 `REPO_URL` 改成你的仓库地址，页脚链接才会生效
-- 把 README 顶部的「在线体验」地址换成真实的 Pages 地址
-- 在仓库 **About** 里填一句话简介，并把 `assets/shot-result.png` 设为 social preview（分享到微信/Twitter 时显示这张图）
-
-### 部署后注意：没有本地代理了
-
-Pages 是纯静态托管，`server.mjs` 跑不起来，所以**勾选「经本地代理转发」会失效**。好在主流服务商都允许浏览器直连，实测结果：
-
-| 服务商 | 浏览器直连 |
-|---|---|
-| DeepSeek / 智谱 / Kimi / 通义 / 硅基流动 | 支持 |
-| OpenAI | 不支持，需服务端代理 |
-
-所以部署后请使用上表前五个之一。选了不支持直连的服务商，设置面板会直接给出提示，不会让你撞一次错误才发现。
+1. 把仓库 Fork 或 push 到你自己的 GitHub 账号
+2. 仓库 **Settings → Pages**，把 Source 选成 **GitHub Actions**
+3. 之后每次 push 到 main 都会自动部署，地址是 `https://<你的用户名>.github.io/dream-reframe/`
 
 ## License
 
-MIT。把 `LICENSE` 里的署名换成你自己的名字。
+MIT。Fork 后把 `LICENSE` 里的署名换成你自己的名字即可。

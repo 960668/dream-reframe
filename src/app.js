@@ -4,7 +4,7 @@
  * 这里只做编排，不做业务：提示词在 prompts.js，请求在 llm.js / image.js，
  * DOM 在 render.js。想调模型行为，不用打开这个文件。
  */
-import { DEFAULT_IMAGE_SIZE, PROVIDERS, REPO_URL, SIZE_KEYS, STORAGE_KEY } from './config.js';
+import { DEFAULT_IMAGE_SIZE, PROVIDERS, REPO_URL, SIZE_KEYS } from './config.js';
 import { describeError, isConfigured, loadSettings, saveSettings } from './llm.js';
 import { describeImageError, imageConfigOf, isImageReady } from './image.js';
 import { generateShotImage, reframeDream, renderDreamImages, toExport } from './pipeline.js';
@@ -447,5 +447,3 @@ if (REPO_URL) {
 } else {
   $('repoLink').hidden = true;
 }
-
-void STORAGE_KEY;
