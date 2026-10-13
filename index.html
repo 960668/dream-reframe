@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>梦境重构 · Dream Reframe</title>
+<meta name="description" content="把一段醒来后即将遗忘的梦境，重构成可读的故事分镜与可执行的视觉提示词。">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"></div>
+
+<header class="site-head">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">梦境重构</span>
+    <span class="brand-en">Dream&nbsp;Reframe</span>
+  </div>
+  <p class="tagline">梦不是待解的谜题，是一段需要重新剪辑的素材。</p>
+</header>
+
+<main>
+
+  <details class="panel settings" id="settings">
+    <summary>
+      <span>模型设置</span>
+      <span class="settings-state" id="settingsState">未配置</span>
+    </summary>
+    <div class="settings-body">
+      <p class="field-hint">
+        本应用不内置任何密钥。填入你自己的 OpenAI 兼容接口即可运行，配置只保存在这台设备的浏览器里。
+      </p>
+
+      <div class="grid">
+        <label class="field">
+          <span>服务商</span>
+          <select id="provider"></select>
+        </label>
+        <label class="field">
+          <span>模型</span>
+          <input id="model" type="text" spellcheck="false" placeholder="deepseek-chat">
+        </label>
+        <label class="field field-wide">
+          <span>接口地址</span>
+          <input id="baseURL" type="text" spellcheck="false" placeholder="https://api.deepseek.com/v1">
+        </label>
+        <label class="field field-wide">
+          <span>API Key</span>
+          <input id="apiKey" type="password" spellcheck="false" autocomplete="off" placeholder="sk-...">
+        </label>
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="useProxy">
+        <span>经本地代理转发（浏览器直连被跨域拦截时勾选，需先运行 <code>node server.mjs</code>）</span>
+      </label>
+
+      <div class="controls">
+        <button class="btn-primary btn-sm" type="button" id="saveSettings">保存设置</button>
+        <a class="link-muted" id="keyHelp" href="#" target="_blank" rel="noopener">去哪里拿 Key？</a>
+      </div>
+    </div>
+  </details>
+
+  <section class="panel input-panel" aria-label="梦境输入">
+    <label class="field-label" for="dreamInput">描述你的梦</label>
+    <p class="field-hint">不用有条理，想到什么写什么。混乱本身就是素材。</p>
+
+    <textarea id="dreamInput" rows="7"
+      placeholder="昨晚我梦见自己站在一个会呼吸的图书馆里，书架像潮水一样退去又涌回来……"></textarea>
+
+    <div class="samples">
+      <span class="samples-label">没有灵感？试试：</span>
+      <button class="chip-btn" type="button" data-sample="0">会呼吸的图书馆</button>
+      <button class="chip-btn" type="button" data-sample="1">末班地铁</button>
+      <button class="chip-btn" type="button" data-sample="2">归还影子的人</button>
+    </div>
+
+    <div class="controls">
+      <button id="runBtn" class="btn-primary" type="button">重构这个梦</button>
+      <button id="stopBtn" class="btn-ghost" type="button" hidden>停止</button>
+      <button id="demoBtn" class="btn-ghost btn-sm" type="button">看示例效果（不用 Key）</button>
+      <span class="status" id="status" role="status" aria-live="polite"></span>
+    </div>
+
+    <ol class="steps" id="steps">
+      <li data-step="analyze"><span class="dot"></span>解析梦境</li>
+      <li data-step="storyboard"><span class="dot"></span>编排分镜</li>
+      <li data-step="visual"><span class="dot"></span>生成视觉提示词</li>
+    </ol>
+  </section>
+
+  <section id="result" class="result" hidden aria-label="重构结果">
+
+    <article class="panel dream-card">
+      <div class="dream-card-top">
+        <p class="eyebrow">梦境档案</p>
+        <span class="badge" id="demoBadge" hidden>示例数据</span>
+      </div>
+      <h2 id="dreamTitle" class="dream-title"></h2>
+      <p id="dreamThesis" class="dream-thesis"></p>
+      <div class="chips" id="dreamMood"></div>
+      <div class="chips chips-motif" id="dreamMotifs"></div>
+    </article>
+
+    <article class="panel" id="stylePanel" hidden>
+      <div class="panel-head">
+        <h3>风格锚点</h3>
+        <button class="btn-copy" type="button" data-copy="styleAnchor">复制</button>
+      </div>
+      <p class="field-hint">每个镜头都拼接了这一串，用来保证跨镜头的视觉一致性。</p>
+      <pre class="code" id="styleAnchor"></pre>
+    </article>
+
+    <article class="panel">
+      <div class="panel-head">
+        <h3>分镜重构</h3>
+        <span class="count" id="shotCount"></span>
+      </div>
+      <div id="shots" class="shots"></div>
+    </article>
+
+    <article class="panel actions-panel">
+      <button class="btn-ghost btn-sm" type="button" id="copyAll">复制全部提示词</button>
+      <button class="btn-ghost btn-sm" type="button" id="downloadJson">导出 JSON</button>
+      <button class="btn-ghost btn-sm" type="button" id="resetBtn">清空重来</button>
+    </article>
+
+  </section>
+
+  <section id="errorBox" class="panel error-panel" hidden aria-live="assertive">
+    <h3>这一步没走通</h3>
+    <p id="errorText"></p>
+    <button class="btn-ghost btn-sm" type="button" id="retryBtn">重试</button>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <p>
+    梦境重构 · Dream Reframe ·
+    <a href="https://github.com/" id="repoLink" target="_blank" rel="noopener">GitHub</a> ·
+    <a href="docs/PRD.md">产品说明</a>
+  </p>
+  <p class="foot-note">密钥只存在于你的浏览器本地存储，不会上传到任何服务器。梦境原文仅用于本次生成。</p>
+</footer>
+
+<script type="module" src="src/app.js"></script>
+</body>
+</html>
