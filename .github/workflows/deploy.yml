@@ -1,0 +1,48 @@
+name: Deploy to GitHub Pages
+
+# 推到 main 就自动部署。首次需要手动去仓库 Settings → Pages，
+# 把 Source 改成 "GitHub Actions"，之后每次 push 都会自动更新。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      # 这个项目没有构建步骤，所以只挑站点真正需要的文件，
+      # 避免把 README、docs、server.mjs 一起发布出去。
+      - name: 整理站点文件
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r src assets _site/
+          touch _site/.nojekyll
+
+      - name: 配置 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 打包
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: 部署
+        id: deploy
+        uses: actions/deploy-pages@v4

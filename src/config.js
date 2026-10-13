@@ -1,7 +1,11 @@
 /**
  * 服务商预设。
  * 这里只放「接口地址 + 默认模型」这类公开信息，任何密钥都不进代码。
- * cors 字段表示该服务商允许浏览器直连（不允许时需要走本地代理）。
+ *
+ * cors: 该服务商是否允许浏览器直连。实测于 2026-10，方法是对 chat/completions
+ * 发一次带 Origin 的 OPTIONS 预检，看是否返回 access-control-allow-origin。
+ * 为 false 的服务商必须走本地代理 `node server.mjs`——这意味着部署到静态托管
+ * （GitHub Pages 等）后无法使用，只能选 cors: true 的。
  */
 export const PROVIDERS = [
   {
@@ -10,6 +14,7 @@ export const PROVIDERS = [
     baseURL: 'https://api.deepseek.com/v1',
     model: 'deepseek-chat',
     keyHelp: 'https://platform.deepseek.com/api_keys',
+    cors: true,
   },
   {
     id: 'zhipu',
@@ -17,6 +22,7 @@ export const PROVIDERS = [
     baseURL: 'https://open.bigmodel.cn/api/paas/v4',
     model: 'glm-4-flash',
     keyHelp: 'https://open.bigmodel.cn/usercenter/apikeys',
+    cors: true,
   },
   {
     id: 'moonshot',
@@ -24,6 +30,7 @@ export const PROVIDERS = [
     baseURL: 'https://api.moonshot.cn/v1',
     model: 'moonshot-v1-8k',
     keyHelp: 'https://platform.moonshot.cn/console/api-keys',
+    cors: true,
   },
   {
     id: 'dashscope',
@@ -31,6 +38,7 @@ export const PROVIDERS = [
     baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     model: 'qwen-plus',
     keyHelp: 'https://bailian.console.aliyun.com/',
+    cors: true,
   },
   {
     id: 'siliconflow',
@@ -38,6 +46,7 @@ export const PROVIDERS = [
     baseURL: 'https://api.siliconflow.cn/v1',
     model: 'Qwen/Qwen2.5-7B-Instruct',
     keyHelp: 'https://cloud.siliconflow.cn/account/ak',
+    cors: true,
   },
   {
     id: 'openai',
@@ -45,6 +54,7 @@ export const PROVIDERS = [
     baseURL: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',
     keyHelp: 'https://platform.openai.com/api-keys',
+    cors: false,
   },
   {
     id: 'custom',
@@ -52,6 +62,7 @@ export const PROVIDERS = [
     baseURL: '',
     model: '',
     keyHelp: '',
+    cors: null,
   },
 ];
 

@@ -2,6 +2,8 @@
 
 > 把一段醒来后即将遗忘的梦，重构成可以被看见的画面，和一组可以直接喂给文生图模型的视觉提示词。
 
+**在线体验**：https://&lt;你的用户名&gt;.github.io/dream-reframe/　（部署后把这里换成真实地址）
+
 ![首屏](assets/shot-hero.png)
 
 ## 这是什么
@@ -130,22 +132,102 @@ dream-reframe/
 
 ## 发布到 GitHub
 
-```bash
-cd dream-reframe
-git init
-git add .
-git commit -m "init: dream-reframe v0.1"
+### 0. 先配好 git 身份
 
-# 在 GitHub 上新建一个空仓库（不要勾选自动生成 README）
-git remote add origin git@github.com:<你的用户名>/dream-reframe.git
-git branch -M main
+这一步不能跳。没有身份，提交会挂在一个匿名账号下，**GitHub 上不会算到你的贡献记录里**，招聘方点进 commit 也看不到作者是谁。
+
+```bash
+git config --global user.name "你的名字"
+git config --global user.email "你的 GitHub 邮箱"
+```
+
+邮箱建议用 GitHub 账户里设置的那个（Settings → Emails），否则头像和贡献图都不会关联。
+
+### 1. 在 GitHub 上建一个空仓库
+
+浏览器打开 https://github.com/new ，仓库名 `dream-reframe`。
+
+**不要勾选** "Add a README file"、"Add .gitignore"、"Choose a license"——本地已经有了，勾了会导致 push 冲突。
+
+### 2. 关联并推送
+
+推荐用 HTTPS + Token，因为你这台机器还没有 SSH 密钥：
+
+```bash
+cd /Users/mac/WorkBuddy/2026-10-13-14-57-46/dream-reframe
+git remote add origin https://github.com/<你的用户名>/dream-reframe.git
 git push -u origin main
 ```
 
-推上去之后记得做两件事：
+推送时会要求输入账号密码。**密码栏要填 Personal Access Token，不是你的 GitHub 登录密码**：
 
-1. 把 `src/config.js` 里的 `REPO_URL` 改成你的仓库地址，页脚链接才会生效
-2. 在仓库 About 里填一句话简介，并把 `assets/shot-result.png` 设为 social preview
+1. 打开 https://github.com/settings/tokens
+2. Generate new token → 勾选 `repo` 权限 → 生成后复制
+3. 粘到密码栏（终端里不会显示字符，这是正常的）
+
+Mac 上第一次输入后会被 Keychain 记住，之后不用再输。
+
+<details>
+<summary>或者：装 gh CLI，一条命令建仓库 + 推送（推荐长期使用）</summary>
+
+```bash
+brew install gh
+gh auth login          # 按提示选 HTTPS，浏览器授权
+cd /Users/mac/WorkBuddy/2026-10-13-14-57-46/dream-reframe
+gh repo create dream-reframe --public --source=. --push
+```
+
+好处是不用手动建仓库、不用管理 Token，`gh` 会自动处理凭据并写进 Keychain。
+
+</details>
+
+<details>
+<summary>或者：用 SSH（需要先生成密钥）</summary>
+
+你这台机器目前没有 SSH 密钥。生成并添加：
+
+```bash
+ssh-keygen -t ed25519 -C "你的 GitHub 邮箱"   # 一路回车
+pbcopy < ~/.ssh/id_ed25519.pub                # 复制公钥
+```
+
+然后打开 https://github.com/settings/keys → New SSH key → 粘贴 → 保存。
+
+```bash
+git remote add origin git@github.com:<你的用户名>/dream-reframe.git
+git push -u origin main
+```
+
+</details>
+
+### 3. 打开自动部署（这一步别跳过）
+
+仓库里已经放好了 `.github/workflows/deploy.yml`。推上去之后：
+
+1. 进入仓库 **Settings → Pages**
+2. 把 **Source** 从 "Deploy from a branch" 改成 **"GitHub Actions"**
+3. 回到 **Actions** 标签页，看到 "Deploy to GitHub Pages" 跑完（约 1 分钟）
+
+地址就是 `https://<你的用户名>.github.io/dream-reframe/`。以后每次 push 到 main 都会自动更新。
+
+**这一步比仓库本身重要。** 面试官不会 clone 你的代码跑一遍，但会点开一个链接试用。README 第一段放上这个地址，效果远好于十页代码。
+
+### 4. 收尾
+
+- 把 `src/config.js` 里的 `REPO_URL` 改成你的仓库地址，页脚链接才会生效
+- 把 README 顶部的「在线体验」占位地址换成真实的 Pages 地址
+- 在仓库 **About** 里填一句话简介，并把 `assets/shot-result.png` 设为 social preview（分享到微信/Twitter 时显示这张图）
+
+### 部署后注意：没有本地代理了
+
+Pages 是纯静态托管，`server.mjs` 跑不起来，所以**勾选「经本地代理转发」会失效**。好在主流服务商都允许浏览器直连，实测结果：
+
+| 服务商 | 浏览器直连 |
+|---|---|
+| DeepSeek / 智谱 / Kimi / 通义 / 硅基流动 | 支持 |
+| OpenAI | 不支持，需服务端代理 |
+
+所以部署后请使用上表前五个之一。选了不支持直连的服务商，设置面板会直接给出提示，不会让你撞一次错误才发现。
 
 ## License
 

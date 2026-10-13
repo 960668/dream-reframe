@@ -50,6 +50,15 @@ function applyProvider(id, { overwriteFields }) {
   } else {
     help.hidden = true;
   }
+
+  // cors 为 false 时，浏览器直连一定失败。提前说清楚，比让用户撞一次错误好。
+  const hint = $('providerHint');
+  if (provider.cors === false) {
+    hint.textContent = '这个服务商不允许浏览器直连。本机运行时可勾选下面的本地代理；如果用的是 GitHub Pages 这类静态托管，没有代理，请换一个服务商。';
+    hint.hidden = false;
+  } else {
+    hint.hidden = true;
+  }
 }
 
 function paintSettings() {

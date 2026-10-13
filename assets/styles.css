@@ -152,6 +152,16 @@ h3 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
   line-height: 1.6;
 }
 
+/* 服务商不支持浏览器直连时的提前警告 */
+#providerHint {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 184, 96, 0.28);
+  border-radius: 10px;
+  background: rgba(240, 184, 96, 0.07);
+  color: var(--amber);
+}
+
 textarea {
   width: 100%;
   padding: 16px 18px;
