@@ -58,7 +58,7 @@
 不需要安装任何依赖，只要 Node 18+。
 
 ```bash
-git clone https://github.com/<你的用户名>/dream-reframe.git
+git clone https://github.com/960668/dream-reframe.git
 cd dream-reframe
 node server.mjs        # 或者 npm start
 ```
@@ -85,7 +85,8 @@ node server.mjs        # 或者 npm start
 dream-reframe/
 ├── index.html            # 单页入口
 ├── assets/
-│   └── styles.css        # 全部视觉
+│   ├── styles.css        # 全部视觉
+│   └── *.png             # README 截图与示例成片
 ├── src/
 │   ├── app.js            # 入口：状态、事件、流程编排
 │   ├── config.js         # 服务商预设（只有公开信息，无密钥）
@@ -96,6 +97,7 @@ dream-reframe/
 │   ├── render.js         # 渲染层（全部 DOM API，模型输出不经 innerHTML）
 │   └── sample.js         # 示例数据
 ├── server.mjs            # 零依赖本地服务：静态文件 + 接口转发
+├── package.json          # 元信息与 start 脚本
 └── docs/
     ├── PRD.md            # 产品说明：要解决什么、为什么这样解决
     ├── PROMPTS.md        # 提示词调参手册：改哪一行、怎么验证
