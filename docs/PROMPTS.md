@@ -6,20 +6,20 @@
 
 ## 一、控制 AI 生成的全部位置
 
-只有四个地方在影响模型输出，其余文件都是展示层。
+**文字侧**只有四个地方在影响模型输出，其余文件都是展示层；出图侧另有三处，见第六节。
 
 | # | 位置 | 管什么 | 改动的影响范围 |
 |---|---|---|---|
-| 1 | `src/prompts.js` → `ANALYZE_SYSTEM` | 文字像不像梦 | 标题、概括、画面描述、身体感 |
-| 2 | `src/prompts.js` → `VISUAL_SYSTEM` | 画面像不像梦 | 风格锚点、英文提示词 |
-| 3 | `src/prompts.js` → `analyzeUserPrompt` / `visualUserPrompt` | 怎么把输入包给模型 | 每次请求的语境 |
-| 4 | `src/pipeline.js` 的 `temperature` | 发散程度 | 全局 |
+| 1 | `src/prompts.js:10` → `ANALYZE_SYSTEM` | 文字像不像梦；也是「第一人称 + 不写人脸」的源头 | 标题、概括、画面描述、身体感 |
+| 2 | `src/prompts.js:69` → `VISUAL_SYSTEM` | 画面像不像梦；视角与人物写法 | 风格锚点、英文提示词 |
+| 3 | `src/prompts.js:59` / `:92` → `analyzeUserPrompt` / `visualUserPrompt` | 怎么把输入包给模型 | 每次请求的语境 |
+| 4 | `src/pipeline.js:84` / `:98` → `temperature` | 发散程度（解析段 0.85 / 视觉段 0.6） | 全局 |
 
-### 容易忽略但很关键的两处「非提示词」约束
+### 容易忽略但很关键的三处「非提示词」约束
 
-- `src/pipeline.js:36` — `shots.slice(0, 6)`。提示词里写的是「2-5 个画面」，但归一化层最多收 6 个。改数量上限要两边一起改，否则会被静默截断。
-- `src/pipeline.js:41` — `sensation` 字段。名字改了这里不改，模型输出就会掉进虚空。
-- `src/config.js:6-56` — `PROVIDERS` 数组，模型的更换入口。同一份提示词换模型，效果可能天差地别。
+- `src/pipeline.js:40` — `shots.slice(0, 6)`。提示词里写的是「2-5 个画面」，但归一化层最多收 6 个。改数量上限要两边一起改，否则会被静默截断。
+- `src/pipeline.js:45` — `sensation` 字段。名字改了这里不改，模型输出就会掉进虚空。
+- `src/config.js:16-103` — `PROVIDERS` 数组，模型的更换入口。同一份提示词换模型，效果可能天差地别。
 
 ---
 
@@ -124,27 +124,42 @@ echo "我梦见在图书馆里，地板是白色的瓷砖..." > /tmp/dream-fixtu
 
 | # | 位置 | 管什么 |
 |---|---|---|
-| 1 | `src/prompts.js` → `IMAGE_GUARD` | 附加在每条提示词末尾的约束（防文字、防过度干净） |
-| 2 | `src/prompts.js` → `composeImagePrompt` | 约束的拼装方式（正向拼 vs 单独下发） |
-| 3 | `src/config.js` → `PROVIDERS[].image` | 出图模型、支持的尺寸、尺寸字段名、是否支持 negative_prompt |
+| 1 | `src/prompts.js:140` → `IMAGE_GUARD` | **正向**约束，拼在每条提示词末尾，所有接口都生效 |
+| 2 | `src/prompts.js:143` → `IMAGE_NEGATIVE` | **负向**约束，只在支持 `negative_prompt` 的接口单独下发 |
+| 3 | `src/prompts.js:150` → `composeImagePrompt` | 正向约束的拼装方式 |
+| 4 | `src/config.js` → `PROVIDERS[].image` | 出图模型、支持的尺寸、尺寸字段名、是否支持 negative_prompt |
+
+### 为什么是两个常量，不是一条
+
+因为同一个字符串没法同时当正向和负向用。出图侧有两条硬要求：
+
+- **第一视角**（`first-person view`）——「希望画面里有什么」
+- **不出现可辨认的人脸**（`faces kept out of frame or turned away`）——同样是正向写法
+
+如果把这两条塞进一条字符串、再按老办法在硅基流动上丢给 `negative_prompt`，就会变成「**不要**第一视角」——意思正好反了。所以拆成两个常量：
+
+- `IMAGE_GUARD` 走正向提示词，**所有接口都拼**
+- `IMAGE_NEGATIVE` 走 `negative_prompt`，**只有 `provider.image.negative` 为 true 的接口才下发**
+
+还有一条经验：**正向约束里不要写「不要 X」**。提示词里的否定容易反过来抬高模型对 X 的关注度，要排除的东西写进 `IMAGE_NEGATIVE`。
 
 ### 最终提示词是怎么拼出来的
 
 ```
 画面提示词（VISUAL_SYSTEM 生成）
   + 风格锚点（同上，保证跨画面一致）
-  + IMAGE_GUARD（出图约束）
+  + IMAGE_GUARD（正向：第一视角 / 人物处理 / 质感）   ← 所有接口都拼
+negative_prompt = IMAGE_NEGATIVE（仅支持该字段的接口）
 ```
-
-支持 `negative_prompt` 的接口（硅基流动 Kolors）会把 `IMAGE_GUARD` 单独下发，不污染正向提示词；不支持的（智谱 CogView）只能拼在末尾。这个分流由 `provider.image.negative` 决定，**改 `IMAGE_GUARD` 不需要动其他任何文件**。
 
 ### 症状 → 该改哪里
 
 | 你看到的症状 | 改哪里 | 怎么改 |
 |---|---|---|
 | 画面太干净、像素材库照片 | `IMAGE_GUARD` | 加 `uneven lighting, dust, slight blur` |
-| 画面里冒出乱码文字或招牌 | `IMAGE_GUARD` | 确认 `no legible text, no signage` 还在 |
-| 每张图人脸都不一样 / 崩坏 | `IMAGE_GUARD` | `no visible faces` 是默认，别删；或让文字侧多写背影、遮挡 |
+| 画面里冒出乱码文字或招牌 | `IMAGE_NEGATIVE` | 确认 `legible text, logos, watermarks` 还在 |
+| 每张图人脸都不一样 / 崩坏 | `IMAGE_GUARD` + `IMAGE_NEGATIVE` | 正向保留 `faces kept out of frame or turned away`；负向加 `portrait photography` |
+| 出现正脸，或视角跑到第三人称 | `IMAGE_GUARD` | 确认 `first-person view` 还在；再回 `VISUAL_SYSTEM` 规则 4、5 检查文字侧 |
 | 图太亮太「日光」 | `IMAGE_GUARD` | 加 `underexposed, deep shadows, low key` |
 | 几张图风格不统一 | **不是出图侧的问题** | 回到 `VISUAL_SYSTEM` 规则 1 调风格锚点 |
 | 报「尺寸不被支持」 | `config.js` 的 `sizePreset` | 该服务商只认列表里的值，别手填别的 |

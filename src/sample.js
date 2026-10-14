@@ -3,12 +3,12 @@
  * 用途有两个：给输入框提供灵感，以及在没有配置 Key 时也能看到完整交互。
  * 走示例路径时界面会明确标注「示例数据」，不会伪装成模型输出。
  *
- * 提示词与 VISUAL_SYSTEM 的输出规则一致：画面语法（构图、视角允许），
- * 不含景别与运镜；风格锚点走「梦境质感」，不走电影质感。
+ * 提示词与 VISUAL_SYSTEM 的输出规则一致：第一人称视角、不出现可辨认的人脸、
+ * 构图允许；不含景别与运镜。风格锚点走「梦境质感」，不走电影质感。
  *
- * 注意：assets/ 下的两张示例成片（demo-shot-01/04.png）由早期版本的
- * 电影语法锚点生成，与下方当前的提示词并非同源。用当前锚点重新生成
- * 的待办记录在 docs/ROADMAP.md 的技术债一节。
+ * 注意：assets/ 下的两张示例成片（demo-shot-01/04.png）由早期版本生成——
+ * 那时还没有第一人称与人物处理约束，锚点也还是电影语法，与下方当前的提示词
+ * 并非同源。用当前规则重新生成的待办记在 docs/ROADMAP.md 的技术债一节。
  */
 
 export const SAMPLE_DREAMS = [
@@ -54,7 +54,7 @@ export const DEMO_SAMPLE = {
       no: 3,
       caption: '玻璃楼梯',
       scene:
-        '一道玻璃楼梯向上延伸却看不到尽头，踩上去会泛起水波。你的影子落在台阶上，比你先一步往上走。',
+        '一道玻璃楼梯向上延伸却看不到尽头，踩上去会泛起水波。我的影子落在台阶上，比我先一步往上走。',
       emotion: '错位',
       sensation: '每踩一级，身体就轻一点。影子先走，我后到，可我们明明是一起动的。',
       prompt:
@@ -69,9 +69,9 @@ export const DEMO_SAMPLE = {
       emotion: '释然',
       sensation: '离得越远，越能感觉到那些字擦过手背。海水不凉，像刚洗过的手。',
       prompt:
-        'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, seen from far away',
+        'library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, seen from the flooded floor looking up',
       demoImage: 'assets/demo-shot-04.png',
-      fullPrompt: `library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, seen from far away, ${DREAM_ANCHOR}`,
+      fullPrompt: `library ceiling dissolved into a night sea, thousands of loose pages flying toward the horizon, letters scattering across the water surface and slowly reassembling, seen from the flooded floor looking up, ${DREAM_ANCHOR}`,
     },
   ],
 };

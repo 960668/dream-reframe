@@ -17,7 +17,7 @@ import {
   ANALYZE_SYSTEM,
   analyzeUserPrompt,
   composeImagePrompt,
-  IMAGE_GUARD,
+  IMAGE_NEGATIVE,
   VISUAL_SYSTEM,
   visualUserPrompt,
 } from './prompts.js';
@@ -121,14 +121,11 @@ export { imageConfigOf };
 
 /**
  * 单个画面的最终提示词：
- *   画面提示词 + 风格锚点（第一步拼好）+ 出图约束（这里拼）。
- * 支持 negative_prompt 的接口会把约束单独下发，不污染正向提示词。
+ *   画面提示词 + 风格锚点（第一步拼好）+ 正向出图约束（这里拼）。
+ * 正向约束所有接口都会拼上——它写的是「要有什么」，不是「不要什么」。
  */
-export function imagePromptOf(shot, settings) {
-  const cfg = imageConfigOf(settings);
-  return composeImagePrompt(shot.fullPrompt || shot.prompt || '', {
-    supportsNegative: Boolean(cfg?.negative),
-  });
+export function imagePromptOf(shot) {
+  return composeImagePrompt(shot.fullPrompt || shot.prompt || '');
 }
 
 /** 生成单个画面的图。批量出图和「换一张」共用这一个入口。 */
@@ -136,8 +133,9 @@ export async function generateShotImage(shot, settings, { signal } = {}) {
   const cfg = imageConfigOf(settings);
   const { url } = await generateImage({
     settings,
-    prompt: imagePromptOf(shot, settings),
-    negativePrompt: cfg?.negative ? IMAGE_GUARD : '',
+    prompt: imagePromptOf(shot),
+    // 只有支持 negative_prompt 的接口才下发；不支持的靠 IMAGE_GUARD 的正面写法兜住。
+    negativePrompt: cfg?.negative ? IMAGE_NEGATIVE : '',
     size: settings.imageSize,
     signal,
   });

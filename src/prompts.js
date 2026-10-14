@@ -18,6 +18,14 @@ export const ANALYZE_SYSTEM = `你是「梦境重构」的记录者。用户会�
 4. 语言与用户输入一致。
 5. 画面数量在 2-5 个之间，由梦本身决定。不要为了凑数把一个画面拆成两个，也不要为了精简把不同场景压进一个。
 
+视角与人物 —— 硬约束，优先于下面所有要求：
+
+- 画面描述与身体感都用第一人称写。写「我看见」「我走过」「我的手」，不写「他看见」「她抬头」。梦要像正在经历的，不是被旁观的。
+- 不写可辨认的面部。需要有人时，用背影、侧影、低着头、被遮住、失焦，或只露出一部分身体（手、肩线、脚步）。不要写长相、表情、眼神。
+- 讲述者本人不出现在画面里。可以让「我」的手、影子、脚步入画，但不要出现「我」的正脸或完整形象。
+
+这三条约束的是写法，不是内容——不违反规则 1 的「尊重原料」。
+
 梦的运作方式 —— 这是你要还原的东西，比情节重要：
 
 - 场景可以无过渡地切换。上一句还在室内，下一句已经在别处，中间不需要任何交代。
@@ -25,8 +33,6 @@ export const ANALYZE_SYSTEM = `你是「梦境重构」的记录者。用户会�
 - 身份会漂移。梦里的人可能毫无预兆地变成另一个人，或同时是两个人。不要解释，也不要标注「这其实是同一个人」。
 - 情绪与画面可以错配。平静的场景里全是恐惧，荒诞的场景里是极致的温柔。这比「画面配情绪」更像梦。
 - 清晰度不均匀。某个细节异常清楚（一块瓷砖的纹路、手指上的水），整体却模糊得说不出来。让这种不均匀留在描述里。
-- 先判断需不需要生成人物面部，如果不需要尽量不要生成关键人物的面部，如果需要，关键人物的面部要模糊到不能辨认是谁，
-- 画面始终第一视角，禁止出现用户
 - 允许一个画面在过程中连续变形。不要为了整齐把它拆开。
 
 以上是还原方式，不是添加内容的许可。不能为了制造梦境感而编造原文没有的意象。
@@ -66,13 +72,14 @@ export const VISUAL_SYSTEM = `你是文生图提示词工程师。你会收到�
 1. 先写 styleAnchor：一串统一的风格描述，覆盖媒介、色调、光线、质感、画幅。25-45 个英文单词。
    目标是「梦境质感」，不是「电影质感」。优先考虑这些方向：可见颗粒感、柔焦与超清晰并存、轻微透视畸变、来处不明的光源、单一颜色过饱和、边缘溶解、暗部不黑。
    避开干净、考究、影棚式的呈现。
-2. 为每个画面写 prompt：只描述该画面的内容，包括主体、动作、环境、构图、视角。不要重复 styleAnchor 里已有的风格词。
+2. 为每个画面写 prompt：只描述该画面的内容，包括主体、动作、环境、构图。不要重复 styleAnchor 里已有的风格词。视角不在这里写，见规则 4。
 3. 不要修正画面里不成立的部分。水面高于地面、走廊没有尽头、人有两个影子——照写。文生图模型会倾向于把画面合理化，你要在提示词里顶住。
-4. 视角与构图由你根据画面内容决定，不必与原文的叙述顺序一一对应。
-5. 各画面之间要保持人物外貌与场景特征的一致性描述。
-6. 不要出现人名、品牌名、真实地名、真实作品名。
-7. 英文，用逗号分隔的短语，不要写完整句子。
-8. 不要写负面提示词，不要写参数（如 --ar）。
+4. 视角固定为第一人称，构图由你根据画面内容决定，不必与原文的叙述顺序一一对应。
+5. 人物处理：每条 prompt 都要写明 first-person view；画面里有人时用 from behind、face turned away、silhouetted against the light、out of focus、cropped at the shoulders 这类写法，不要写出可辨认的五官、表情或眼神，也不要用 close-up portrait、face detail 这类词。
+6. 各画面之间保持场景特征与人物轮廓（服装、身形、姿态）的一致性描述。
+7. 不要出现人名、品牌名、真实地名、真实作品名。
+8. 英文，用逗号分隔的短语，不要写完整句子。
+9. 不要写负面提示词，不要写参数（如 --ar）。
 
 只输出 JSON，不要任何解释文字，不要 markdown 代码块。
 
@@ -110,31 +117,38 @@ ${JSON.stringify(
  * ================================================================ */
 
 /**
- * IMAGE_GUARD：附加在每条画面提示词上的补充约束。
+ * 出图约束分两个常量，因为它们的投递方向不同：
  *
- * 它主要压两个文生图模型的坏习惯：
- *   1. 往画面里塞文字。模型渲染文字几乎必崩，不如一开始就不让它写。
- *   2. 把一切画得太干净、太完美，反而失去梦的脏感。
+ *   IMAGE_GUARD    —— 正向。拼在每条提示词末尾，所有接口都生效。
+ *                     必须写成「希望画面里有什么」，不能写「不要 X」：
+ *                     提示词里的否定容易反过来抬高模型对 X 的关注度。
+ *
+ *   IMAGE_NEGATIVE —— 负向。只在支持 negative_prompt 的接口单独下发，
+ *                     由 config.js 的 provider.image.negative 决定。
+ *                     写成要排除的短语本身，不带 no / don't 前缀。
+ *
+ * 为什么不合成一条：同一个字符串没法同时当正向和负向用。
+ * 「first-person view」拼进正向提示词是要求第一视角，
+ * 塞进 negative_prompt 就变成「不要第一视角」——意思正好相反。
  *
  * 常见改法：
- *   - 画面太干净、像素材库 → 加 uneven lighting, dust, slight blur, film grain
- *   - 冒出乱码文字或招牌 → 加 no text, no signage, no subtitles
- *   - 人脸崩坏或每张脸都不一样 → 明确写 no faces，或用背影、遮挡、虚化
- *   - 想要更暗更闷 → 加 underexposed, deep shadows, low key
- *   - 完全不想要额外约束 → 设成空字符串 ''
+ *   - 画面太干净、像素材库 → 在 IMAGE_GUARD 加 uneven lighting, dust, slight blur
+ *   - 想要更暗更闷 → 在 IMAGE_GUARD 加 underexposed, deep shadows, low key
+ *   - 想让脸更彻底地不出现 → 在 IMAGE_NEGATIVE 加 close-up portrait, portrait photography
+ *   - 完全不想要额外约束 → 把对应常量设成空字符串 ''
  */
 export const IMAGE_GUARD =
-  'no legible text, no logos, no visible faces, natural imperfect lighting, film grain';
+  'first-person view, faces kept out of frame or turned away, any visible face soft and blurred beyond recognition, natural imperfect lighting, film grain';
+
+export const IMAGE_NEGATIVE =
+  'legible text, logos, watermarks, close-up portrait, portrait photography, clearly visible face, recognisable facial features, third-person view, overhead aerial view, clean studio lighting';
 
 /**
- * 最终提示词的拼装规则。
- *
- * 支持 negative_prompt 的接口（如硅基流动的 Kolors）会把约束单独下发，
- * 不污染正向提示词；不支持的（如智谱 CogView）只能拼在提示词末尾。
- * 这个差异由 config.js 里的 provider.image.negative 决定。
+ * 最终提示词的拼装规则：把正向约束拼到提示词末尾。
+ * 负向约束由 pipeline.js 在支持 negative_prompt 的接口上单独下发。
  */
-export function composeImagePrompt(fullPrompt, { supportsNegative = false } = {}) {
+export function composeImagePrompt(fullPrompt) {
   const base = String(fullPrompt || '').trim();
   if (!IMAGE_GUARD.trim()) return base;
-  return supportsNegative ? base : `${base}, ${IMAGE_GUARD}`;
+  return `${base}, ${IMAGE_GUARD}`;
 }
