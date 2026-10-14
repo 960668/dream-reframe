@@ -21,10 +21,11 @@ export const ANALYZE_SYSTEM = `你是「梦境重构」的记录者。用户会�
 视角与人物 —— 硬约束，优先于下面所有要求：
 
 - 画面描述与身体感都用第一人称写。写「我看见」「我走过」「我的手」，不写「他看见」「她抬头」。梦要像正在经历的，不是被旁观的。
-- 不写可辨认的面部。需要有人时，用背影、侧影、低着头、被遮住、失焦，或只露出一部分身体（手、肩线、脚步）。不要写长相、表情、眼神。
-- 讲述者本人不出现在画面里。可以让「我」的手、影子、脚步入画，但不要出现「我」的正脸或完整形象。
+- 不写可辨认的面部。画面里出现「别人」时，用背影、侧影、低着头、被遮住、失焦，或只露出一部分身体（手、肩线、脚步）。不要写长相、表情、眼神。
+- 讲述者本人不出画，但只限正脸与完整形象：不写「我」的脸，不写「我」的全身，也不写「我」在镜中或水里的完整倒影——第一人称本来就看不到这些。
+- 「我」的手、影子、脚步可以入画。它们是第一人称最直接的证据，比空镜更能说明「我正在经历」。原文提到了就保留，不要删；原文没提到也不要凭空虚加。
 
-这三条约束的是写法，不是内容——不违反规则 1 的「尊重原料」。
+这几条约束的是写法，不是内容——不违反规则 1 的「尊重原料」。
 
 梦的运作方式 —— 这是你要还原的东西，比情节重要：
 
@@ -75,7 +76,9 @@ export const VISUAL_SYSTEM = `你是文生图提示词工程师。你会收到�
 2. 为每个画面写 prompt：只描述该画面的内容，包括主体、动作、环境、构图。不要重复 styleAnchor 里已有的风格词。视角不在这里写，见规则 4。
 3. 不要修正画面里不成立的部分。水面高于地面、走廊没有尽头、人有两个影子——照写。文生图模型会倾向于把画面合理化，你要在提示词里顶住。
 4. 视角固定为第一人称，构图由你根据画面内容决定，不必与原文的叙述顺序一一对应。
-5. 人物处理：每条 prompt 都要写明 first-person view；画面里有人时用 from behind、face turned away、silhouetted against the light、out of focus、cropped at the shoulders 这类写法，不要写出可辨认的五官、表情或眼神，也不要用 close-up portrait、face detail 这类词。
+5. 人物处理：每条 prompt 都要写明 first-person view。画面里有人时用 from behind、face turned away、silhouetted against the light、out of focus、cropped at the shoulders 这类写法，不要写出可辨认的五官、表情或眼神，也不要用 close-up portrait、face detail 这类词。
+   讲述者本人不出画，但只限正脸与完整形象：不写他的 face、full body，也不写 mirror reflection 里的完整倒影。
+   「我」自己的手、影子、脚步可以入画，用 own hands at the edge of the frame、the viewer's own shadow on the steps、feet stepping into view 这类写法。画面记录里提到了才写，不要凭空虚加。
 6. 各画面之间保持场景特征与人物轮廓（服装、身形、姿态）的一致性描述。
 7. 不要出现人名、品牌名、真实地名、真实作品名。
 8. 英文，用逗号分隔的短语，不要写完整句子。
@@ -131,24 +134,47 @@ ${JSON.stringify(
  * 「first-person view」拼进正向提示词是要求第一视角，
  * 塞进 negative_prompt 就变成「不要第一视角」——意思正好相反。
  *
+ * 为什么不把「我」的手/影子/脚步写进 IMAGE_GUARD：
+ * 那是逐画面决定的事（原文提到才写），由 VISUAL_SYSTEM 规则 5 在每条
+ * prompt 里处理。IMAGE_GUARD 拼的是每一条提示词——把它放进来，等于
+ * 要求一整间空旷阅览室也必须伸进一只手。
+ *
  * 常见改法：
  *   - 画面太干净、像素材库 → 在 IMAGE_GUARD 加 uneven lighting, dust, slight blur
  *   - 想要更暗更闷 → 在 IMAGE_GUARD 加 underexposed, deep shadows, low key
  *   - 想让脸更彻底地不出现 → 在 IMAGE_NEGATIVE 加 close-up portrait, portrait photography
+ *   - 想让「我」的手/影子更常出现 → 改 VISUAL_SYSTEM 规则 5，不要改这里
  *   - 完全不想要额外约束 → 把对应常量设成空字符串 ''
  */
 export const IMAGE_GUARD =
   'first-person view, faces kept out of frame or turned away, any visible face soft and blurred beyond recognition, natural imperfect lighting, film grain';
 
 export const IMAGE_NEGATIVE =
-  'legible text, logos, watermarks, close-up portrait, portrait photography, clearly visible face, recognisable facial features, third-person view, overhead aerial view, clean studio lighting';
+  'legible text, logos, watermarks, close-up portrait, portrait photography, clearly visible face, recognisable facial features, full-body view of the dreamer, mirror reflection of the dreamer, third-person view, overhead aerial view, clean studio lighting';
 
 /**
  * 最终提示词的拼装规则：把正向约束拼到提示词末尾。
  * 负向约束由 pipeline.js 在支持 negative_prompt 的接口上单独下发。
+ *
+ * 拼之前会去重：VISUAL_SYSTEM 规则 5 要求每条提示词自带 first-person view，
+ * 而 IMAGE_GUARD 里也有这一条——不去重的话，同一句话会在最终提示词里出现两次
+ * （styleAnchor 的 film grain 同理）。按逗号切段做整段比对，只跳过完全相同
+ * 的短语，不会误伤 fine film grain texture 这种更具体的写法。
  */
 export function composeImagePrompt(fullPrompt) {
   const base = String(fullPrompt || '').trim();
   if (!IMAGE_GUARD.trim()) return base;
-  return `${base}, ${IMAGE_GUARD}`;
+
+  const existing = new Set(
+    base
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const extra = IMAGE_GUARD.split(',')
+    .map((s) => s.trim())
+    .filter((s) => s && !existing.has(s.toLowerCase()));
+
+  if (!extra.length) return base;
+  return base ? `${base}, ${extra.join(', ')}` : extra.join(', ');
 }

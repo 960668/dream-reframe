@@ -4,7 +4,8 @@
  * 走示例路径时界面会明确标注「示例数据」，不会伪装成模型输出。
  *
  * 提示词与 VISUAL_SYSTEM 的输出规则一致：第一人称视角、不出现可辨认的人脸、
- * 构图允许；不含景别与运镜。风格锚点走「梦境质感」，不走电影质感。
+ * 讲述者本人不出画（正脸与完整形象），但「我」的手、影子、脚步可以入画；
+ * 构图允许；不含景别与运镜，也不含负面措辞。风格锚点走「梦境质感」，不走电影质感。
  *
  * 注意：assets/ 下的两张示例成片（demo-shot-01/04.png）由早期版本生成——
  * 那时还没有第一人称与人物处理约束，锚点也还是电影语法，与下方当前的提示词
@@ -35,9 +36,9 @@ export const DEMO_SAMPLE = {
       emotion: '屏息',
       sensation: '脚底是干的，却听得见水在退。空气里有铁锈和湿纸的味道。',
       prompt:
-        'vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, symmetrical composition, no people',
+        'deserted library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, symmetrical composition',
       demoImage: 'assets/demo-shot-01.png',
-      fullPrompt: `vast library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, symmetrical composition, no people, ${DREAM_ANCHOR}`,
+      fullPrompt: `deserted library reading room at low tide, bookshelves standing like dark cliffs on both sides, white tiled floor partly submerged, tide-line markings across the tiles, water draining away slowly, symmetrical composition, ${DREAM_ANCHOR}`,
     },
     {
       no: 2,
@@ -58,8 +59,8 @@ export const DEMO_SAMPLE = {
       emotion: '错位',
       sensation: '每踩一级，身体就轻一点。影子先走，我后到，可我们明明是一起动的。',
       prompt:
-        'endless glass staircase ascending into haze, each step rippling like water when touched, a lone human shadow climbing one step ahead of the viewer',
-      fullPrompt: `endless glass staircase ascending into haze, each step rippling like water when touched, a lone human shadow climbing one step ahead of the viewer, ${DREAM_ANCHOR}`,
+        'endless glass staircase ascending into haze, each step rippling like water when touched, the viewer\'s own shadow on the steps, climbing one step ahead, first-person view',
+      fullPrompt: `endless glass staircase ascending into haze, each step rippling like water when touched, the viewer's own shadow on the steps, climbing one step ahead, first-person view, ${DREAM_ANCHOR}`,
     },
     {
       no: 4,

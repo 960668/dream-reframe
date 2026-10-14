@@ -10,16 +10,18 @@
 
 | # | 位置 | 管什么 | 改动的影响范围 |
 |---|---|---|---|
-| 1 | `src/prompts.js:10` → `ANALYZE_SYSTEM` | 文字像不像梦；也是「第一人称 + 不写人脸」的源头 | 标题、概括、画面描述、身体感 |
-| 2 | `src/prompts.js:69` → `VISUAL_SYSTEM` | 画面像不像梦；视角与人物写法 | 风格锚点、英文提示词 |
-| 3 | `src/prompts.js:59` / `:92` → `analyzeUserPrompt` / `visualUserPrompt` | 怎么把输入包给模型 | 每次请求的语境 |
-| 4 | `src/pipeline.js:84` / `:98` → `temperature` | 发散程度（解析段 0.85 / 视觉段 0.6） | 全局 |
+| 1 | `src/prompts.js` → `ANALYZE_SYSTEM` | 文字像不像梦；也是「第一人称 + 不写正脸与完整形象」的源头 | 标题、概括、画面描述、身体感 |
+| 2 | `src/prompts.js` → `VISUAL_SYSTEM` | 画面像不像梦；视角与人物写法（含「我」的手／影子／脚步） | 风格锚点、英文提示词 |
+| 3 | `src/prompts.js` → `analyzeUserPrompt` / `visualUserPrompt` | 怎么把输入包给模型 | 每次请求的语境 |
+| 4 | `src/pipeline.js` 的 `temperature` | 发散程度（解析段 0.85 / 视觉段 0.6） | 全局 |
+
+> 本文档只写了**符号名与规则编号**，不写行号——行号每次改代码都会失效。
 
 ### 容易忽略但很关键的三处「非提示词」约束
 
-- `src/pipeline.js:40` — `shots.slice(0, 6)`。提示词里写的是「2-5 个画面」，但归一化层最多收 6 个。改数量上限要两边一起改，否则会被静默截断。
-- `src/pipeline.js:45` — `sensation` 字段。名字改了这里不改，模型输出就会掉进虚空。
-- `src/config.js:16-103` — `PROVIDERS` 数组，模型的更换入口。同一份提示词换模型，效果可能天差地别。
+- `src/pipeline.js` 的 `shots.slice(0, 6)` — 提示词里写的是「2-5 个画面」，但归一化层最多收 6 个。改数量上限要两边一起改，否则会被静默截断。
+- `src/pipeline.js` 的 `sensation` 字段 — 名字改了这里不改，模型输出就会掉进虚空。
+- `src/config.js` 的 `PROVIDERS` 数组 — 模型的更换入口。同一份提示词换模型，效果可能天差地别。
 
 ---
 
@@ -104,11 +106,11 @@ echo "我梦见在图书馆里，地板是白色的瓷砖..." > /tmp/dream-fixtu
 
 **实验 A · 验证「梦的运作方式」六条的实际作用**
 
-删掉 `ANALYZE_SYSTEM` 里第 23-28 行（六条机制），用同一段梦重跑。对比前后，你会清楚看到这六条承担了多少工作量。
+删掉 `ANALYZE_SYSTEM` 里「梦的运作方式」那一节的六条机制，用同一段梦重跑。对比前后，你会清楚看到这六条承担了多少工作量。
 
 **实验 B · 感受 temperature**
 
-把 `pipeline.js:81` 的 `0.85` 改成 `0.3`，重跑三次，再改成 `1.2` 重跑三次。低温度下每次结果高度雷同，高温度下会出现意想不到的组合——但也更容易跑偏。
+把 `pipeline.js` 里解析段的 `temperature: 0.85` 改成 `0.3`，重跑三次，再改成 `1.2` 重跑三次。低温度下每次结果高度雷同，高温度下会出现意想不到的组合——但也更容易跑偏。
 
 **实验 C · 试探风格锚点的边界**
 
@@ -124,9 +126,9 @@ echo "我梦见在图书馆里，地板是白色的瓷砖..." > /tmp/dream-fixtu
 
 | # | 位置 | 管什么 |
 |---|---|---|
-| 1 | `src/prompts.js:140` → `IMAGE_GUARD` | **正向**约束，拼在每条提示词末尾，所有接口都生效 |
-| 2 | `src/prompts.js:143` → `IMAGE_NEGATIVE` | **负向**约束，只在支持 `negative_prompt` 的接口单独下发 |
-| 3 | `src/prompts.js:150` → `composeImagePrompt` | 正向约束的拼装方式 |
+| 1 | `src/prompts.js` → `IMAGE_GUARD` | **正向**约束，拼在每条提示词末尾，所有接口都生效 |
+| 2 | `src/prompts.js` → `IMAGE_NEGATIVE` | **负向**约束，只在支持 `negative_prompt` 的接口单独下发 |
+| 3 | `src/prompts.js` → `composeImagePrompt` | 正向约束的拼装方式 |
 | 4 | `src/config.js` → `PROVIDERS[].image` | 出图模型、支持的尺寸、尺寸字段名、是否支持 negative_prompt |
 
 ### 为什么是两个常量，不是一条
@@ -141,6 +143,8 @@ echo "我梦见在图书馆里，地板是白色的瓷砖..." > /tmp/dream-fixtu
 - `IMAGE_GUARD` 走正向提示词，**所有接口都拼**
 - `IMAGE_NEGATIVE` 走 `negative_prompt`，**只有 `provider.image.negative` 为 true 的接口才下发**
 
+还有一条**故意不写进 `IMAGE_GUARD`** 的要求：「我」的手、影子、脚步可以入画。它是逐画面的选择（画面记录里提到了才写），而 `IMAGE_GUARD` 拼的是**每一条**提示词——写进去等于要求一整间空旷阅览室也必须伸进一只手。这条落在 `VISUAL_SYSTEM` 规则 5。
+
 还有一条经验：**正向约束里不要写「不要 X」**。提示词里的否定容易反过来抬高模型对 X 的关注度，要排除的东西写进 `IMAGE_NEGATIVE`。
 
 ### 最终提示词是怎么拼出来的
@@ -148,9 +152,11 @@ echo "我梦见在图书馆里，地板是白色的瓷砖..." > /tmp/dream-fixtu
 ```
 画面提示词（VISUAL_SYSTEM 生成）
   + 风格锚点（同上，保证跨画面一致）
-  + IMAGE_GUARD（正向：第一视角 / 人物处理 / 质感）   ← 所有接口都拼
+  + IMAGE_GUARD（正向：第一视角 / 人物处理 / 质感）   ← 所有接口都拼，逐段去重
 negative_prompt = IMAGE_NEGATIVE（仅支持该字段的接口）
 ```
+
+拼装会**按逗号切段去重**：规则 5 要求每条提示词自带 `first-person view`，`IMAGE_GUARD` 里也有这一条，不去重的话同一句话会在最终提示词里出现两次（风格锚点末尾的 `film grain` 同理）。只跳过完全相同的短语，不会误伤 `fine film grain texture` 这类更具体的写法。
 
 ### 症状 → 该改哪里
 
@@ -160,6 +166,9 @@ negative_prompt = IMAGE_NEGATIVE（仅支持该字段的接口）
 | 画面里冒出乱码文字或招牌 | `IMAGE_NEGATIVE` | 确认 `legible text, logos, watermarks` 还在 |
 | 每张图人脸都不一样 / 崩坏 | `IMAGE_GUARD` + `IMAGE_NEGATIVE` | 正向保留 `faces kept out of frame or turned away`；负向加 `portrait photography` |
 | 出现正脸，或视角跑到第三人称 | `IMAGE_GUARD` | 确认 `first-person view` 还在；再回 `VISUAL_SYSTEM` 规则 4、5 检查文字侧 |
+| 想保留「我」的手／影子／脚步，但模型把画面清空了 | **不是出图侧的问题** | 在**该画面的 prompt** 里写 `own hands at the edge of the frame` / `the viewer's own shadow on the steps`；别写进 `IMAGE_GUARD`（它会作用于每一张图，包括空镜） |
+| 画面里出现了「我」的全身或镜中倒影 | `IMAGE_NEGATIVE` | 确认 `full-body view of the dreamer`、`mirror reflection of the dreamer` 还在 |
+| 明明原文没提，画面却硬塞进一只手 | `VISUAL_SYSTEM` 规则 5 | 那句末尾的「不要凭空虚加」被删了或没生效，补回去 |
 | 图太亮太「日光」 | `IMAGE_GUARD` | 加 `underexposed, deep shadows, low key` |
 | 几张图风格不统一 | **不是出图侧的问题** | 回到 `VISUAL_SYSTEM` 规则 1 调风格锚点 |
 | 报「尺寸不被支持」 | `config.js` 的 `sizePreset` | 该服务商只认列表里的值，别手填别的 |
